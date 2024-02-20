@@ -23,20 +23,21 @@ class AVWGCN(nn.Module):
         
         node_num = node_embeddings.shape[0]
         node_embeddings = self.dropout(self.layernorm(node_embeddings))
-        supports = F.softmax(F.elu(torch.mm(node_embeddings, node_embeddings.transpose(0, 1))), dim=1)
+        #supports = F.softmax(F.elu(torch.mm(node_embeddings, node_embeddings.transpose(0, 1))), dim=-1)
         
         if mask is not None:
-           
+
             #self.qz_loga = self.qz_linear(h)
             #mask = self.adj.to(x.device)*self.sample_weights()
-            supports = supports*mask
+            score = F.elu(torch.mm(node_embeddings, node_embeddings.transpose(0, 1))).masked_fill(mask == 0, -1e9)
+            supports = F.softmax(score,dim=-1)
             support_set = [torch.eye(node_num).expand(batch_size,node_num, node_num).to(supports.device), supports]
             
         else:
+            supports = F.softmax(F.elu(torch.mm(node_embeddings, node_embeddings.transpose(0, 1))), dim=-1)
             
             support_set = [torch.eye(node_num).to(supports.device), supports]
-            #*self.adj.to(x.device)
-            mask = self.adj
+            
         #default cheb_k = 3
         for k in range(2, self.cheb_k):
             support_set.append(torch.matmul(2 * supports, support_set[-1]) - support_set[-2])
