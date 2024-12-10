@@ -28,7 +28,7 @@ class AVWGCN(nn.Module):
         if mask is not None:
 
             #self.qz_loga = self.qz_linear(h)
-            #mask = self.adj.to(x.device)*self.sample_weights()
+            mask = self.adj.to(x.device)*mask
             score = F.elu(torch.mm(node_embeddings, node_embeddings.transpose(0, 1))).masked_fill(mask == 0, -1e9)
             supports = F.softmax(score,dim=-1)
             support_set = [torch.eye(node_num).expand(batch_size,node_num, node_num).to(supports.device), supports]
